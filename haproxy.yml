@@ -1,0 +1,54 @@
+- hosts: lb
+  vars_files: "/root/ansible_ws/variable.yml"
+  tasks:
+
+  - name: 'install haproxy software'
+    package:
+      name: haproxy
+      state: present
+
+  - name: 'copying haproxy.cfg to /etc/haproxy/haproxy.cfg'
+    template:
+      src: 'haproxy.cfg'
+      dest: '/etc/haproxy/'
+
+  - name: 'start system'
+    service:
+      name: haproxy
+      state: started
+  
+  - firewalld:
+      port: "8080/tcp"
+      state: enabled
+      permanent: yes
+      immediate: yes
+
+
+
+- hosts: web
+  tasks:
+
+  - name: "download package and install service"
+    package:
+      name: httpd
+      state: present
+  - name: "copy content to index.html file"
+    copy:
+      content: "my cntent in haproxy"
+      dest: "/var/www/html/index.html"
+    notify:
+    - Restart httpd
+
+  - firewalld:
+      port: "80/tcp"
+      state: enabled
+      permanent: yes
+      
+
+  handlers:
+  - name: Restart httpd
+    service:
+      name: "httpd"
+      state: "restarted"
+      enabled: yes
+
